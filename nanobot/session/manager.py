@@ -44,8 +44,16 @@ class Session:
     
     def get_history(self, max_messages: int = 500) -> list[dict[str, Any]]:
         """Get recent messages in LLM format, preserving tool metadata."""
+        sliced = self.messages[-max_messages:]
+        # If the slice boundary fell inside a tool_use/tool_result pair, the
+        # assistant message with tool_calls was cut off but its tool result
+        # messages are still present. Drop those orphaned leading tool messages
+        # so the API never sees a tool_result without a matching tool_use.
+        start = 0
+        while start < len(sliced) and sliced[start].get("role") == "tool":
+            start += 1
         out: list[dict[str, Any]] = []
-        for m in self.messages[-max_messages:]:
+        for m in sliced[start:]:
             entry: dict[str, Any] = {"role": m["role"], "content": m.get("content", "")}
             for k in ("tool_calls", "tool_call_id", "name"):
                 if k in m:
