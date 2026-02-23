@@ -324,11 +324,15 @@ def gateway(
     # Set cron callback (needs agent)
     async def on_cron_job(job: CronJob) -> str | None:
         """Execute a cron job through the agent."""
+        async def _silent(*_args, **_kwargs):
+            pass
+
         response = await agent.process_direct(
             job.payload.message,
             session_key=f"cron:{job.id}",
             channel=job.payload.channel or "cli",
             chat_id=job.payload.to or "direct",
+            on_progress=_silent,  # suppress: cron should not push progress to external channels
         )
         if job.payload.deliver and job.payload.to:
             from nanobot.bus.events import OutboundMessage
