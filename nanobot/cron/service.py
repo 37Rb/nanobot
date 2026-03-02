@@ -286,13 +286,16 @@ class CronService:
         self,
         name: str,
         schedule: CronSchedule,
-        message: str,
+        message: str = "",
+        message_file: str | None = None,
         deliver: bool = False,
         channel: str | None = None,
         to: str | None = None,
         delete_after_run: bool = False,
     ) -> CronJob:
         """Add a new job."""
+        if bool(message) == bool(message_file):
+            raise ValueError("Exactly one of message or message_file must be provided")
         store = self._load_store()
         _validate_schedule_for_add(schedule)
         now = _now_ms()
@@ -305,6 +308,7 @@ class CronService:
             payload=CronPayload(
                 kind="agent_turn",
                 message=message,
+                message_file=message_file,
                 deliver=deliver,
                 channel=channel,
                 to=to,
